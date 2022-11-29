@@ -1,13 +1,12 @@
 from mpi4py import MPI
 import sys
-from itertools import islice
-import logging
 from time import sleep
 import sys
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.size
+comm_world = MPI.COMM_WORLD
+rank = comm_world.Get_rank()
+size = comm_world.size
+name = MPI.Get_processor_name()
 
 
 def check_args():
@@ -20,4 +19,4 @@ def check_args():
 def abort_all_processes(error_message: str) -> None:
     print(f"Rank {rank}: {error_message}")
     sys.stdout.flush()
-    comm.Abort()
+    comm_world.Abort()
