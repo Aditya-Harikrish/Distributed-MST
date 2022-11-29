@@ -41,12 +41,6 @@ class dsu:
 
 
 class Graph:
-    # class Fragment:
-    #     def __init__(self, root: int) -> None:
-    #         self.root = root
-    #         self.members = set([root])
-    #         self.edges =
-
     class VertexProperties:
         def __init__(self, fragment_ID: int) -> None:
             self.fragment_ID = fragment_ID
@@ -54,6 +48,7 @@ class Graph:
                 tuple[int, float]
             ] = set()  # set of tuples (vertex, weight)
             self.moe: int = -1  # minimum outgoing edge
+            self.moe_start = fragment_ID
             self.moe_weight = None
 
     def __init__(self, filepath) -> None:
@@ -65,12 +60,7 @@ class Graph:
                 self.n = int(f.readline())
                 self.dsu = dsu(self.n)
                 self.update_size()
-                # self.start_node = u.rank * int(self.n / u.size)
-                # self.num_nodes = (
-                #     int(self.n / u.size)
-                #     if u.rank < u.size - 1
-                #     else self.n - self.start_node
-                # )
+
                 self.start_node = u.rank * int((self.n + u.size - 1) / u.size)
                 self.num_nodes = min(
                     int((self.n + u.size - 1) / u.size), self.n - self.start_node
@@ -79,12 +69,13 @@ class Graph:
                     i: self.VertexProperties(i)
                     for i in range(self.start_node, self.start_node + self.num_nodes)
                 }
+
                 # Iterate over the lines in the file belonging to the rank
                 for i, line in enumerate(
                     islice(
                         f,
                         self.start_node,
-                        self.start_node+self.num_nodes
+                        self.start_node + self.num_nodes
                         if u.rank != u.size - 1
                         else None,
                     )
@@ -103,12 +94,6 @@ class Graph:
 
         except Exception as e:
             abort_all_processes(f"Error: {e}")
-
-    # def init_fragments(self) -> None:
-    #     self.fragments = {
-    #         i: self.Fragment(i)
-    #         for i in range(self.start_node, self.start_node + self.num_nodes)
-    #     }
 
     def process_of_vertex(self, v: int) -> int:
         return int(v / int((self.n + u.size - 1) / u.size))
