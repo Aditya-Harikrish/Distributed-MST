@@ -4,11 +4,14 @@ from graph import Graph
 from mpi4py import MPI
 import logging
 import sys
+import os
+import time
 
 
 def main() -> None:
     logging.basicConfig(level=logging.DEBUG)
     check_args()
+    start_time = time.time()
     g = Graph(sys.argv[1])
     # logging.debug(g)
 
@@ -25,7 +28,7 @@ def main() -> None:
             vp.moe_start = a
             for v in g.graph[a].neighbours:
                 if not g.belong_to_same_fragment(v[0], a) and (
-                    v[1] < vp.moe_weight or (v[1] == vp.moe_weight and v[0] < vp.moe)
+                    v[1] < vp.moe_weight or (v[1] == vp.moe_weight and g.dsu.find_set(v[0]) < g.dsu.find_set(vp.moe))
                 ):
                     vp.moe = v[0]
                     vp.moe_weight = v[1]
@@ -83,7 +86,7 @@ def main() -> None:
                 if moe[1] != -1:
                     if moe[1] < g.graph.get(parent_id).moe_weight or (
                         moe[1] == g.graph.get(parent_id).moe_weight
-                        and moe[0] < g.graph.get(parent_id).moe
+                        and g.dsu.find_set(moe[0]) < g.dsu.find_set(g.graph.get(parent_id).moe)
                     ):
 
                         g.graph.get(parent_id).moe = moe[0]
@@ -101,8 +104,8 @@ def main() -> None:
             if g.belongs_to_this_process(i):
                 if g.graph.get(i).moe != -1:
                     # merge fragment
-                    x = min(g.dsu.parent[i], g.dsu.parent[g.graph.get(i).moe])
-                    y = max(g.dsu.parent[i], g.dsu.parent[g.graph.get(i).moe])
+                    x = min(g.dsu.find_set(i), g.dsu.find_set(g.graph.get(i).moe))
+                    y = max(g.dsu.find_set(i), g.dsu.find_set(g.graph.get(i).moe))
                     merge.add((x, y))
                     # choose edges
                     x = min(g.graph.get(i).moe_start, g.graph.get(i).moe)
@@ -137,9 +140,10 @@ def main() -> None:
         for a, vp in g.graph.items():
             delete_set = set()
             for v in g.graph[a].neighbours:
-                if g.dsu.parent[a] == g.dsu.parent[v[0]]:
+                if g.dsu.find_set(a) == g.dsu.find_set(v[0]):
                     delete_set.add(v)
 
+            # logging.debug(len(delete_set))
             for x in delete_set:
                 g.graph[a].neighbours.remove(x)
 
@@ -147,7 +151,7 @@ def main() -> None:
         # this_comm = comm_world.Split(color=)
         # print(f'{rank=}, {g.start_node=}, {g.num_nodes=}')
         # logging.debug(g)
-        # logging.debug(ans)
+        # logging.debug(len(ans))
         # break
     comm_world.Barrier()
 
@@ -172,13 +176,25 @@ def main() -> None:
                 ans.add(data_temp)
         comm_world.Barrier()
 
+    execution_time = time.time() - start_time
     if u.rank == 0:
-        logging.debug(ans)
+        MST_COST = 0
+        for x in ans:
+            MST_COST += x[2]
+        print(f"Time taken = {execution_time} seconds")
+        print(f"Total cost {MST_COST}")
         if len(ans) + 1 == g.n:
+            
+            with open(os.path.abspath("output/output.txt"), "w") as f:
+                print(f"Time taken = {execution_time} seconds", file=f)
+                print(f"Total cost {MST_COST}", file=f)
+                # print(f'mst = {ans}',file=f)
+                print("MST Found", file=f)
             print("MST Found")
         else:
             print("Error: MST not found")
-            # print(len(ans))
+            print(len(ans))
+        
 
 
 if __name__ == "__main__":

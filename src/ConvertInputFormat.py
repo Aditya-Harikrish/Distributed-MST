@@ -1,5 +1,7 @@
 """
-Usage: python GenerateInput.py file_path.mtx
+Usage: python3 ConvertInputFormat.py file_path.mtx <indexing>
+<indexing> can be 0 or 1 or any other natural number 
+
 Output goes to: file_path.in
 
 Converts matrix market files to directed graphs of the following format:
@@ -23,11 +25,16 @@ import sys
 from typing import List, Tuple
 
 
+indexing: int = 0
+
+
 def get_path() -> str:
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 3:
         sys.exit(f"Usage: python GenerateInput.py file_path.mtx")
     elif not sys.argv[1].endswith(".mtx"):
         sys.exit(f"The input file must end in .mtx")
+    global indexing
+    indexing = int(sys.argv[2])
     return sys.argv[1]
 
 
@@ -47,7 +54,8 @@ def set_graph(input_path: str) -> List[Tuple[int, int]]:
                     graph = [set() for j in range(nrows)]
                 else:
                     i, j, w = int(line[0]), int(line[1]), float(line[2])
-                    graph[i - 1].add((j - 1, w))
+                    graph[i - indexing].add((j - indexing, w))
+                    graph[j - indexing].add((i - indexing, w))
     except FileNotFoundError:
         sys.exit(f"File {input_path} not found")
 
